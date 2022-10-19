@@ -1,0 +1,5 @@
+package: boundary
+output: router_gen.go
+generate:
+  chi-server: true
+  models: true

@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - ./init/:/docker-entrypoint-initdb.d/
+
+  webshop:
+    build:
+      context: ..
+      dockerfile: ./build/Dockerfile
+    environment:
+      PQ_HOST: postgres
+    ports:
+      - 8000:8000
