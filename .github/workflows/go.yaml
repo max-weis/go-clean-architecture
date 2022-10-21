@@ -19,12 +19,6 @@ jobs:
       - name: Build
         run: make compile
 
-      - name: Lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.29
-        run: make lint
-
       - name: Unit Test
         run: make short
 
