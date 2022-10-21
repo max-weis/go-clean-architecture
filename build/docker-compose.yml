@@ -13,6 +13,7 @@ services:
     build:
       context: ..
       dockerfile: ./build/Dockerfile
+    restart: always
     environment:
       PQ_HOST: postgres
     ports:
