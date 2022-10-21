@@ -22,14 +22,14 @@ type ProductBase struct {
 	Title string `json:"title"`
 }
 
-// PostV1ProductJSONRequestBody defines body for PostV1Product for application/json ContentType.
-type PostV1ProductJSONRequestBody = ProductBase
+// CreateProductJSONRequestBody defines body for CreateProduct for application/json ContentType.
+type CreateProductJSONRequestBody = ProductBase
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
 	// (POST /v1/product)
-	PostV1Product(w http.ResponseWriter, r *http.Request)
+	CreateProduct(w http.ResponseWriter, r *http.Request)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -41,12 +41,12 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// PostV1Product operation middleware
-func (siw *ServerInterfaceWrapper) PostV1Product(w http.ResponseWriter, r *http.Request) {
+// CreateProduct operation middleware
+func (siw *ServerInterfaceWrapper) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostV1Product(w, r)
+		siw.Handler.CreateProduct(w, r)
 	})
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -170,7 +170,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/v1/product", wrapper.PostV1Product)
+		r.Post(options.BaseURL+"/v1/product", wrapper.CreateProduct)
 	})
 
 	return r

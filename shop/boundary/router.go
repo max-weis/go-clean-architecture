@@ -19,8 +19,8 @@ func ProvideRouter(controller control.ProductController) Router {
 	return Router{controller: controller}
 }
 
-func (router Router) PostV1Product(w http.ResponseWriter, r *http.Request) {
-	var product PostV1ProductJSONRequestBody
+func (router Router) CreateProduct(w http.ResponseWriter, r *http.Request) {
+	var product CreateProductJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -45,7 +45,7 @@ func writeError(w http.ResponseWriter, code int, message string) {
 	}
 }
 
-func mapBodyToEntity(product PostV1ProductJSONRequestBody) entity.Product {
+func mapBodyToEntity(product CreateProductJSONRequestBody) entity.Product {
 	return entity.Product{
 		Title:       product.Title,
 		Description: product.Description,

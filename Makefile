@@ -1,6 +1,12 @@
 run:
 	go run ./cmd/
 
+test:
+	go test -v ./...
+
+short:
+	go test -v -short ./...
+
 docker:
 	docker compose -f ./build/docker-compose.yml up --build
 

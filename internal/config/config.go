@@ -33,7 +33,7 @@ func ProvideConfig() Config {
 func newDatabaseConfig() DatabaseConfig {
 	return DatabaseConfig{
 		User:     readEnvVar("PQ_USER", "postgres"),
-		Password: readEnvVar("PQ_PASSWORD", "postgres"),
+		Password: readEnvVar("PQ_PASSWORD", "password"),
 		Host:     readEnvVar("PQ_HOST", "localhost"),
 		Port:     readEnvVar("PQ_PORT", "5432"),
 		DbName:   readEnvVar("PQ_DB", "postgres"),

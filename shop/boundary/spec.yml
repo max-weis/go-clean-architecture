@@ -8,6 +8,7 @@ paths:
   /v1/product:
     post:
       description: insert a new product
+      operationId: CreateProduct
       requestBody:
         content:
           application/json:

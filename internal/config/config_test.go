@@ -31,10 +31,10 @@ func TestNewDatabaseConfig(t *testing.T) {
 	config := ProvideConfig()
 
 	assert.Equal(t, "postgres", config.DatabaseConfig.User)
-	assert.Equal(t, "postgres", config.DatabaseConfig.Password)
+	assert.Equal(t, "password", config.DatabaseConfig.Password)
 	assert.Equal(t, "localhost", config.DatabaseConfig.Host)
 	assert.Equal(t, "5432", config.DatabaseConfig.Port)
-	assert.Equal(t, "shop", config.DatabaseConfig.DbName)
+	assert.Equal(t, "postgres", config.DatabaseConfig.DbName)
 
 	assert.Equal(t, "localhost:6379", config.CacheConfig.Address)
 }
