@@ -20,6 +20,7 @@ jobs:
         run: make compile
 
       - name: Lint
+        uses: golangci/golangci-lint-action@v3
         run: make lint
 
       - name: Unit Test
