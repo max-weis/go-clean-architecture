@@ -1,6 +1,9 @@
 run:
 	go run ./cmd/
 
+compile:
+	go build -o webshop ./cmd/
+
 test:
 	go test -v ./...
 
