@@ -105,6 +105,21 @@ func (repository sqlxRepository) FindByID(ctx context.Context, id string) (entit
 	return entity.Product{}, nil
 }
 
+const update = `
+update products
+set title = $2,
+    description = $3,
+    price = $4,
+    modified_at = $5
+where id = $1;
+`
+
+func (repository sqlxRepository) Update(ctx context.Context, p entity.Product) error {
+	tx := repository.db.MustBeginTx(ctx, &sql.TxOptions{})
+	tx.MustExecContext(ctx, update, p.ID, p.Title, p.Description, p.Price, p.ModifiedAt)
+	return tx.Commit()
+}
+
 func mapOrder(sort entity.Sorting) string {
 	format := "%s %s"
 

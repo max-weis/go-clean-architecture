@@ -44,6 +44,29 @@ func TestProductController_CreateProduct(t *testing.T) {
 	})
 }
 
+func TestProductController_UpdateProduct(t *testing.T) {
+	t.Run("Successfully update product", func(t *testing.T) {
+		controller := ProvideController(mockProductRepository{})
+
+		err := controller.UpdateProduct(context.Background(), "test", entity.Product{
+			ID:          "test",
+			Title:       "to change",
+			Description: "to change",
+			Price:       10,
+			CreatedAt:   time.Now(),
+			ModifiedAt:  time.Now(),
+		})
+		assert.NoError(t, err)
+	})
+
+	t.Run("Product not found", func(t *testing.T) {
+		controller := ProvideController(mockProductRepository{})
+
+		err := controller.UpdateProduct(context.Background(), "", entity.Product{})
+		assert.ErrorIs(t, err, entity.ErrProductNotFound)
+	})
+}
+
 func TestProductController_FindProducts(t *testing.T) {
 	t.Run("Successfully find 10 products", func(t *testing.T) {
 		controller := ProvideController(mockProductRepository{})
@@ -113,5 +136,13 @@ func (m mockProductRepository) FindPaginated(ctx context.Context, filterObject e
 }
 
 func (m mockProductRepository) Save(ctx context.Context, product entity.Product) error {
+	return nil
+}
+
+func (m mockProductRepository) Update(ctx context.Context, product entity.Product) error {
+	if product.ID == "" {
+		return entity.ErrProductNotFound
+	}
+
 	return nil
 }

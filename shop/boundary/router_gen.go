@@ -87,6 +87,9 @@ type ProductListItem struct {
 	Title string `json:"title"`
 }
 
+// ProductID defines model for ProductID.
+type ProductID = string
+
 // FindProductsParams defines parameters for FindProducts.
 type FindProductsParams struct {
 	// the number of products in a page
@@ -108,6 +111,9 @@ type FindProductsParamsSort string
 // CreateProductJSONRequestBody defines body for CreateProduct for application/json ContentType.
 type CreateProductJSONRequestBody = ProductBase
 
+// UpdateProductJSONRequestBody defines body for UpdateProduct for application/json ContentType.
+type UpdateProductJSONRequestBody = ProductBase
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
@@ -118,7 +124,10 @@ type ServerInterface interface {
 	CreateProduct(w http.ResponseWriter, r *http.Request)
 
 	// (GET /v1/product/{id})
-	FindProduct(w http.ResponseWriter, r *http.Request, id string)
+	FindProduct(w http.ResponseWriter, r *http.Request, id ProductID)
+
+	// (PUT /v1/product/{id})
+	UpdateProduct(w http.ResponseWriter, r *http.Request, id ProductID)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -225,7 +234,7 @@ func (siw *ServerInterfaceWrapper) FindProduct(w http.ResponseWriter, r *http.Re
 	var err error
 
 	// ------------- Path parameter "id" -------------
-	var id string
+	var id ProductID
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
 	if err != nil {
@@ -235,6 +244,32 @@ func (siw *ServerInterfaceWrapper) FindProduct(w http.ResponseWriter, r *http.Re
 
 	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.FindProduct(w, r, id)
+	})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// UpdateProduct operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id ProductID
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProduct(w, r, id)
 	})
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -365,6 +400,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/product/{id}", wrapper.FindProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/product/{id}", wrapper.UpdateProduct)
 	})
 
 	return r

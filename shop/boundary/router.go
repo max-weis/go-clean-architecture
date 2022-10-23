@@ -21,22 +21,6 @@ func ProvideRouter(controller control.ProductController) Router {
 	return Router{controller: controller}
 }
 
-func (router Router) FindProducts(w http.ResponseWriter, r *http.Request, params FindProductsParams) {
-	filterObject := mapFilterParamsToEntity(params)
-	products, err := router.controller.FindProducts(r.Context(), filterObject)
-	if err != nil {
-		if errors.Is(err, entity.ErrValidation) {
-			writeError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	writeJSON(w, http.StatusOK, mapToList(products, filterObject))
-}
-
 func mapToList(products []entity.Product, filterObject entity.FilterObject) ProductList {
 	var list ProductList
 
@@ -129,6 +113,28 @@ func (router Router) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+func (router Router) UpdateProduct(w http.ResponseWriter, r *http.Request, id ProductID) {
+	var product UpdateProductJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := router.controller.UpdateProduct(r.Context(), id, mapBodyToEntity(product)); err != nil {
+		if errors.Is(err, entity.ErrValidation) {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	location := fmt.Sprintf("/v1/product/%s", id)
+	w.Header().Set("Location", location)
+	w.WriteHeader(http.StatusOK)
+}
+
 func (router Router) FindProduct(w http.ResponseWriter, r *http.Request, id string) {
 	product, err := router.controller.FindProduct(r.Context(), id)
 	if err != nil {
@@ -142,6 +148,22 @@ func (router Router) FindProduct(w http.ResponseWriter, r *http.Request, id stri
 	}
 
 	writeJSON(w, http.StatusOK, mapToProduct(product))
+}
+
+func (router Router) FindProducts(w http.ResponseWriter, r *http.Request, params FindProductsParams) {
+	filterObject := mapFilterParamsToEntity(params)
+	products, err := router.controller.FindProducts(r.Context(), filterObject)
+	if err != nil {
+		if errors.Is(err, entity.ErrValidation) {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, mapToList(products, filterObject))
 }
 
 func mapToProduct(product entity.Product) Product {

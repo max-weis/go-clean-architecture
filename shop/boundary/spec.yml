@@ -8,6 +8,8 @@ servers:
 paths:
   /v1/product:
     post:
+      tags:
+        - product
       description: insert a new product
       operationId: CreateProduct
       requestBody:
@@ -27,6 +29,8 @@ paths:
         400:
           description: validation failed
     get:
+      tags:
+        - product
       description: find a list products
       operationId: FindProducts
       parameters:
@@ -79,15 +83,12 @@ paths:
 
   /v1/product/{id}:
     get:
+      tags:
+        - product
       description: find a product with the given id
       operationId: FindProduct
       parameters:
-        - in: path
-          description: id of the product
-          name: id
-          schema:
-            type: string
-            example: 564a495c-3ac1-475d-b257-bd022fad7f96
+        - $ref: '#/components/parameters/ProductID'
       responses:
         200:
           description: successfully found products
@@ -97,8 +98,40 @@ paths:
                 $ref: '#/components/schemas/Product'
         400:
           description: validation error occurred
+    put:
+      tags:
+        - product
+      description: update a product with the given id
+      operationId: UpdateProduct
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductBase'
+      responses:
+        200:
+          description: successfully updated the product
+          headers:
+            Location:
+              description: the location of the new product
+              example: /v1/product/7c34056e-743a-4f14-b46c-9ae1fe5c4cab
+              schema:
+                type: string
+        404:
+          description: product not found
 
 components:
+  parameters:
+    ProductID:
+      in: path
+      description: id of the product
+      name: id
+      schema:
+        type: string
+        example: 564a495c-3ac1-475d-b257-bd022fad7f96
+
   schemas:
     ProductBase:
       properties:

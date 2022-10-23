@@ -78,6 +78,38 @@ func TestSqlxRepository_Command(t *testing.T) {
 		})
 		assert.NoError(t, err)
 	})
+
+	t.Run("Successfully update", func(t *testing.T) {
+		now := time.Date(2000, time.January, 1, 12, 0, 0, 0, time.UTC)
+		ctx := context.Background()
+		err := repository.Save(ctx, entity.Product{
+			ID:          "test update",
+			Title:       "test",
+			Description: "test",
+			Price:       10,
+			CreatedAt:   now,
+			ModifiedAt:  now,
+		})
+		assert.NoError(t, err)
+
+		updateTime := time.Date(2000, time.January, 1, 22, 0, 0, 0, time.UTC)
+		err = repository.Update(ctx, entity.Product{
+			ID:          "test update",
+			Title:       "test update",
+			Description: "test update",
+			Price:       99,
+			CreatedAt:   updateTime,
+			ModifiedAt:  updateTime,
+		})
+
+		product, err := repository.FindByID(ctx, "test update")
+		assert.NoError(t, err)
+
+		assert.Equal(t, product.ID, "test update")
+		assert.Equal(t, product.Title, "test update")
+		assert.Equal(t, product.Description, "test update")
+		assert.Equal(t, product.Price, uint64(99))
+	})
 }
 
 func setupRepository() sqlxRepository {

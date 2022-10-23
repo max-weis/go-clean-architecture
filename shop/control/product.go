@@ -12,11 +12,14 @@ type (
 		// Save persist a product in the database and returns its ID
 		Save(ctx context.Context, product entity.Product) error
 
+		// Update updates a product with the given id
+		Update(ctx context.Context, product entity.Product) error
+
 		// FindPaginated finds a paginated list of products. It can also be sorted and filtered via an entity.FilterObject
 		FindPaginated(ctx context.Context, filterObject entity.FilterObject) ([]entity.Product, error)
 
 		// FindByID tries to find a product.
-		// Returns a entity.ErrProductNotFound error if no product exists with the given id
+		// Returns an entity.ErrProductNotFound error if no product exists with the given id
 		FindByID(ctx context.Context, id string) (entity.Product, error)
 	}
 
@@ -48,6 +51,24 @@ func (controller ProductController) CreateProduct(ctx context.Context, product e
 	log.Printf("created product with title '%s'", product.Title)
 
 	return product.ID, nil
+}
+
+func (controller ProductController) UpdateProduct(ctx context.Context, id string, product entity.Product) error {
+	update, err := controller.FindProduct(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	update.Title = product.Title
+	update.Description = product.Description
+	update.Price = product.Price
+	update.ModifiedAt = time.Now()
+
+	if err := controller.repository.Update(ctx, update); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (controller ProductController) FindProducts(ctx context.Context, filter entity.FilterObject) ([]entity.Product, error) {
