@@ -67,6 +67,21 @@ func TestProductController_UpdateProduct(t *testing.T) {
 	})
 }
 
+func TestProductController_DeleteProduct(t *testing.T) {
+	t.Run("Successfully delete product", func(t *testing.T) {
+		controller := ProvideController(mockProductRepository{})
+
+		err := controller.DeleteProduct(context.Background(), "test")
+		assert.NoError(t, err)
+	})
+	t.Run("product not found", func(t *testing.T) {
+		controller := ProvideController(mockProductRepository{})
+
+		err := controller.DeleteProduct(context.Background(), "")
+		assert.ErrorIs(t, err, entity.ErrProductNotFound)
+	})
+}
+
 func TestProductController_FindProducts(t *testing.T) {
 	t.Run("Successfully find 10 products", func(t *testing.T) {
 		controller := ProvideController(mockProductRepository{})
@@ -116,7 +131,14 @@ func TestProductController_FindProduct(t *testing.T) {
 type mockProductRepository struct {
 }
 
-func (m mockProductRepository) FindByID(ctx context.Context, id string) (entity.Product, error) {
+func (m mockProductRepository) Delete(_ context.Context, id string) error {
+	if id == "" {
+		return entity.ErrProductNotFound
+	}
+	return nil
+}
+
+func (m mockProductRepository) FindByID(_ context.Context, id string) (entity.Product, error) {
 	if id == "" {
 		return entity.Product{}, nil
 	}
@@ -131,15 +153,15 @@ func (m mockProductRepository) FindByID(ctx context.Context, id string) (entity.
 	}, nil
 }
 
-func (m mockProductRepository) FindPaginated(ctx context.Context, filterObject entity.FilterObject) ([]entity.Product, error) {
+func (m mockProductRepository) FindPaginated(_ context.Context, _ entity.FilterObject) ([]entity.Product, error) {
 	return []entity.Product{{ID: "1"}, {ID: "2"}, {ID: "3"}, {ID: "4"}, {ID: "5"}, {ID: "6"}, {ID: "7"}, {ID: "8"}, {ID: "9"}, {ID: "10"}}, nil
 }
 
-func (m mockProductRepository) Save(ctx context.Context, product entity.Product) error {
+func (m mockProductRepository) Save(_ context.Context, _ entity.Product) error {
 	return nil
 }
 
-func (m mockProductRepository) Update(ctx context.Context, product entity.Product) error {
+func (m mockProductRepository) Update(_ context.Context, product entity.Product) error {
 	if product.ID == "" {
 		return entity.ErrProductNotFound
 	}

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/jmoiron/sqlx"
+	"log"
 	"time"
 	"webshop/shop/control"
 	"webshop/shop/entity"
@@ -87,7 +88,11 @@ func (repository sqlxRepository) FindByID(ctx context.Context, id string) (entit
 	if err != nil {
 		return entity.Product{}, err
 	}
-	defer rows.Close()
+	defer func(rows *sqlx.Rows) {
+		if err := rows.Close(); err != nil {
+			log.Printf("failed to close row: '%s'", err)
+		}
+	}(rows)
 
 	if err := rows.Err(); err != nil {
 		return entity.Product{}, err
@@ -120,14 +125,14 @@ func (repository sqlxRepository) Update(ctx context.Context, p entity.Product) e
 	return tx.Commit()
 }
 
-const delete = `
+const remove = `
 delete from products
 where id = $1;
 `
 
 func (repository sqlxRepository) Delete(ctx context.Context, id string) error {
 	tx := repository.db.MustBeginTx(ctx, &sql.TxOptions{})
-	tx.MustExecContext(ctx, delete, id)
+	tx.MustExecContext(ctx, remove, id)
 	return tx.Commit()
 }
 
