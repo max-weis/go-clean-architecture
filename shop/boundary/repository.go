@@ -74,6 +74,37 @@ func (repository sqlxRepository) FindPaginated(ctx context.Context, filterObject
 	return mapFromEntities(products), nil
 }
 
+const findByID = `
+select *
+from products
+where id = $1;
+`
+
+func (repository sqlxRepository) FindByID(ctx context.Context, id string) (entity.Product, error) {
+	tx := repository.db.MustBeginTx(ctx, &sql.TxOptions{})
+
+	rows, err := tx.Queryx(findByID, id)
+	if err != nil {
+		return entity.Product{}, err
+	}
+	defer rows.Close()
+
+	if err := rows.Err(); err != nil {
+		return entity.Product{}, err
+	}
+
+	for rows.Next() {
+		var product productEntity
+		if err := rows.StructScan(&product); err != nil {
+			return entity.Product{}, err
+		}
+
+		return mapFromEntity(product), nil
+	}
+
+	return entity.Product{}, nil
+}
+
 func mapOrder(sort entity.Sorting) string {
 	format := "%s %s"
 

@@ -21,8 +21,12 @@ const (
 	ModifiedAtDesc
 )
 
-// ValidationError describes an error which occurred during validation
-var ValidationError = errors.New("validation failed")
+var (
+	// ErrValidation describes an error which occurred during validation
+	ErrValidation = errors.New("validation failed")
+	// ErrProductNotFound describes an error which occurred if a product cannot be found
+	ErrProductNotFound = errors.New("product not found")
+)
 
 type (
 	// Sorting describes in which order a list of products will be sorted
@@ -50,14 +54,14 @@ type (
 	}
 )
 
-// Validate checks if the product follows the business rules. A ValidationError will be returned if not.
+// Validate checks if the product follows the business rules. A ErrValidation will be returned if not.
 func (product Product) Validate() error {
 	if product.Title == "" {
-		return fmt.Errorf("%w: title must be set", ValidationError)
+		return fmt.Errorf("%w: title must be set", ErrValidation)
 	}
 
 	if product.Description == "" {
-		return fmt.Errorf("%w: description must be set", ValidationError)
+		return fmt.Errorf("%w: description must be set", ErrValidation)
 	}
 
 	return nil
@@ -68,10 +72,10 @@ func (product *Product) NewId() {
 	product.ID = uuid.NewString()
 }
 
-// Validate checks if the FilterObject follows the business rules. A ValidationError will be returned if not.
+// Validate checks if the FilterObject follows the business rules. A ErrValidation will be returned if not.
 func (filter FilterObject) Validate() error {
 	if filter.Limit == 0 {
-		return fmt.Errorf("%w: limit cannot be zero", ValidationError)
+		return fmt.Errorf("%w: limit cannot be zero", ErrValidation)
 	}
 
 	return nil

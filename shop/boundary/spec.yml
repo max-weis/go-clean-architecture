@@ -77,6 +77,27 @@ paths:
         400:
           description: filter object is invalid
 
+  /v1/product/{id}:
+    get:
+      description: find a product with the given id
+      operationId: FindProduct
+      parameters:
+        - in: path
+          description: id of the product
+          name: id
+          schema:
+            type: string
+            example: 564a495c-3ac1-475d-b257-bd022fad7f96
+      responses:
+        200:
+          description: successfully found products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        400:
+          description: validation error occurred
+
 components:
   schemas:
     ProductBase:
@@ -151,6 +172,36 @@ components:
           description: timestamp when the product was last modified
       required:
         - title
+        - price
+        - created_at
+        - modified_at
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 564a495c-3ac1-475d-b257-bd022fad7f96
+        title:
+          type: string
+          description: title of the product
+        price:
+          type: integer
+          description: price of the product
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date
+          description: timestamp when the product was created
+        modified_at:
+          type: string
+          format: date
+          description: timestamp when the product was last modified
+      required:
+        - id
+        - title
+        - description
         - price
         - created_at
         - modified_at

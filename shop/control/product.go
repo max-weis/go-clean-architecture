@@ -14,6 +14,10 @@ type (
 
 		// FindPaginated finds a paginated list of products. It can also be sorted and filtered via an entity.FilterObject
 		FindPaginated(ctx context.Context, filterObject entity.FilterObject) ([]entity.Product, error)
+
+		// FindByID tries to find a product.
+		// Returns a entity.ErrProductNotFound error if no product exists with the given id
+		FindByID(ctx context.Context, id string) (entity.Product, error)
 	}
 
 	ProductController struct {
@@ -25,7 +29,6 @@ func ProvideController(repository ProductRepository) ProductController {
 	return ProductController{repository: repository}
 }
 
-// CreateProduct creates a new product and returns its id
 func (controller ProductController) CreateProduct(ctx context.Context, product entity.Product) (string, error) {
 	if err := product.Validate(); err != nil {
 		log.Printf("failed to validate product, %s", err)
@@ -62,4 +65,20 @@ func (controller ProductController) FindProducts(ctx context.Context, filter ent
 	log.Printf("found '%d' products", len(products))
 
 	return products, nil
+}
+
+func (controller ProductController) FindProduct(ctx context.Context, id string) (entity.Product, error) {
+	product, err := controller.repository.FindByID(ctx, id)
+	if err != nil {
+		log.Printf("failed to find product with id '%s', %s", id, err)
+		return entity.Product{}, err
+	}
+
+	if product.ID == "" {
+		return entity.Product{}, entity.ErrProductNotFound
+	}
+
+	log.Printf("found product with id '%s'", id)
+
+	return product, nil
 }

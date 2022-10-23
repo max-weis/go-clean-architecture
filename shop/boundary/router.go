@@ -25,7 +25,7 @@ func (router Router) FindProducts(w http.ResponseWriter, r *http.Request, params
 	filterObject := mapFilterParamsToEntity(params)
 	products, err := router.controller.FindProducts(r.Context(), filterObject)
 	if err != nil {
-		if errors.Is(err, entity.ValidationError) {
+		if errors.Is(err, entity.ErrValidation) {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -115,7 +115,7 @@ func (router Router) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	id, err := router.controller.CreateProduct(r.Context(), mapBodyToEntity(product))
 	if err != nil {
-		if errors.Is(err, entity.ValidationError) {
+		if errors.Is(err, entity.ErrValidation) {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -127,6 +127,32 @@ func (router Router) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	location := fmt.Sprintf("/v1/product/%s", id)
 	w.Header().Set("Location", location)
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (router Router) FindProduct(w http.ResponseWriter, r *http.Request, id string) {
+	product, err := router.controller.FindProduct(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, entity.ErrProductNotFound) {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, mapToProduct(product))
+}
+
+func mapToProduct(product entity.Product) Product {
+	return Product{
+		Id:          product.ID,
+		Title:       product.Title,
+		Description: product.Description,
+		Price:       int(product.Price),
+		CreatedAt:   openapi_types.Date{Time: product.CreatedAt},
+		ModifiedAt:  openapi_types.Date{Time: product.ModifiedAt},
+	}
 }
 
 func writeError(w http.ResponseWriter, code int, message string) {

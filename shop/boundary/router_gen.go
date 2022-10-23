@@ -25,6 +25,23 @@ const (
 	TitleDesc    FindProductsParamsSort = "title_desc"
 )
 
+// Product defines model for Product.
+type Product struct {
+	// timestamp when the product was created
+	CreatedAt   openapi_types.Date `json:"created_at"`
+	Description string             `json:"description"`
+	Id          string             `json:"id"`
+
+	// timestamp when the product was last modified
+	ModifiedAt openapi_types.Date `json:"modified_at"`
+
+	// price of the product
+	Price int `json:"price"`
+
+	// title of the product
+	Title string `json:"title"`
+}
+
 // ProductBase defines model for ProductBase.
 type ProductBase struct {
 	// description of the product
@@ -99,6 +116,9 @@ type ServerInterface interface {
 
 	// (POST /v1/product)
 	CreateProduct(w http.ResponseWriter, r *http.Request)
+
+	// (GET /v1/product/{id})
+	FindProduct(w http.ResponseWriter, r *http.Request, id string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -189,6 +209,32 @@ func (siw *ServerInterfaceWrapper) CreateProduct(w http.ResponseWriter, r *http.
 
 	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateProduct(w, r)
+	})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// FindProduct operation middleware
+func (siw *ServerInterfaceWrapper) FindProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.FindProduct(w, r, id)
 	})
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -316,6 +362,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/v1/product", wrapper.CreateProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/product/{id}", wrapper.FindProduct)
 	})
 
 	return r

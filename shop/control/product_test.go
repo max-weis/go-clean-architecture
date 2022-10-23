@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 	"webshop/shop/entity"
 )
 
@@ -28,7 +29,7 @@ func TestProductController_CreateProduct(t *testing.T) {
 			Description: "test",
 			Price:       10,
 		})
-		assert.ErrorIs(t, err, entity.ValidationError)
+		assert.ErrorIs(t, err, entity.ErrValidation)
 	})
 
 	t.Run("Invalid description", func(t *testing.T) {
@@ -39,7 +40,7 @@ func TestProductController_CreateProduct(t *testing.T) {
 			Description: "",
 			Price:       10,
 		})
-		assert.ErrorIs(t, err, entity.ValidationError)
+		assert.ErrorIs(t, err, entity.ErrValidation)
 	})
 }
 
@@ -65,11 +66,46 @@ func TestProductController_FindProducts(t *testing.T) {
 			Limit:  0,
 			Offset: 0,
 		})
-		assert.ErrorIs(t, err, entity.ValidationError)
+		assert.ErrorIs(t, err, entity.ErrValidation)
+	})
+}
+
+func TestProductController_FindProduct(t *testing.T) {
+	t.Run("Successfully find product", func(t *testing.T) {
+		controller := ProvideController(mockProductRepository{})
+
+		product, err := controller.FindProduct(context.Background(), "test")
+		assert.NoError(t, err)
+
+		assert.Equal(t, "test", product.ID)
+		assert.Equal(t, "test", product.Title)
+		assert.Equal(t, "test", product.Description)
+	})
+
+	t.Run("Product not found", func(t *testing.T) {
+		controller := ProvideController(mockProductRepository{})
+
+		_, err := controller.FindProduct(context.Background(), "")
+		assert.ErrorIs(t, err, entity.ErrProductNotFound)
 	})
 }
 
 type mockProductRepository struct {
+}
+
+func (m mockProductRepository) FindByID(ctx context.Context, id string) (entity.Product, error) {
+	if id == "" {
+		return entity.Product{}, nil
+	}
+
+	return entity.Product{
+		ID:          "test",
+		Title:       "test",
+		Description: "test",
+		Price:       1,
+		CreatedAt:   time.Date(2000, time.January, 1, 12, 0, 0, 0, time.UTC),
+		ModifiedAt:  time.Date(2000, time.January, 1, 12, 0, 0, 0, time.UTC),
+	}, nil
 }
 
 func (m mockProductRepository) FindPaginated(ctx context.Context, filterObject entity.FilterObject) ([]entity.Product, error) {

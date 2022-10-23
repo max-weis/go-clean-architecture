@@ -13,20 +13,60 @@ import (
 	"webshop/shop/entity"
 )
 
-func TestSqlxRepository_Save(t *testing.T) {
+func TestSqlxRepository_Query(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skip integrationtest")
 	}
 
+	compose := setupPostgres(t)
+	defer compose.Down()
+
+	// TODO: use waiting strategy
+	time.Sleep(5 * time.Second)
+
+	repository := setupRepository()
+
+	t.Run("Find products", func(t *testing.T) {
+		products, err := repository.FindPaginated(context.Background(), entity.FilterObject{
+			Sort:   entity.TitleAsc,
+			Limit:  10,
+			Offset: 0,
+		})
+		assert.NoError(t, err)
+
+		assert.Len(t, products, 10)
+	})
+
+	t.Run("Find product", func(t *testing.T) {
+		product, err := repository.FindByID(context.Background(), "564a495c-3ac1-475d-b257-bd022fad7f96")
+		assert.NoError(t, err)
+
+		assert.Equal(t, product.ID, "564a495c-3ac1-475d-b257-bd022fad7f96")
+		assert.Equal(t, product.Title, "Pasta - Lasagne, Fresh")
+	})
+
+	t.Run("Found no product", func(t *testing.T) {
+		product, err := repository.FindByID(context.Background(), "1")
+		assert.NoError(t, err)
+
+		assert.Equal(t, product, entity.Product{})
+	})
+}
+
+func TestSqlxRepository_Command(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip integrationtest")
+	}
+
+	compose := setupPostgres(t)
+	defer compose.Down()
+
+	// TODO: use waiting strategy
+	time.Sleep(5 * time.Second)
+
+	repository := setupRepository()
+
 	t.Run("Successfully save product", func(t *testing.T) {
-		compose := setupPostgres(t)
-		defer compose.Down()
-
-		// TODO: use waiting strategy
-		time.Sleep(5 * time.Second)
-
-		repository := setupRepository()
-
 		now := time.Now()
 		err := repository.Save(context.Background(), entity.Product{
 			ID:          "test",
@@ -37,31 +77,6 @@ func TestSqlxRepository_Save(t *testing.T) {
 			ModifiedAt:  now,
 		})
 		assert.NoError(t, err)
-	})
-}
-
-func TestSqlxRepository_FindPaginated(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skip integrationtest")
-	}
-
-	t.Run("Find products", func(t *testing.T) {
-		compose := setupPostgres(t)
-		defer compose.Down()
-
-		// TODO: use waiting strategy
-		time.Sleep(5 * time.Second)
-
-		repository := setupRepository()
-
-		products, err := repository.FindPaginated(context.Background(), entity.FilterObject{
-			Sort:   entity.TitleAsc,
-			Limit:  10,
-			Offset: 0,
-		})
-		assert.NoError(t, err)
-
-		assert.Len(t, products, 10)
 	})
 }
 
