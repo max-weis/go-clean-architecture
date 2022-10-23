@@ -122,6 +122,19 @@ paths:
         404:
           description: product not found
 
+    delete:
+      tags:
+        - product
+      description: delete a product with the given id
+      operationId: DeleteProduct
+      parameters:
+        - $ref: '#/components/parameters/ProductID'
+      responses:
+        200:
+          description: successfully deleted the product
+        404:
+          description: product not found
+
 components:
   parameters:
     ProductID:

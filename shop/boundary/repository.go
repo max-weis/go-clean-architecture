@@ -120,6 +120,17 @@ func (repository sqlxRepository) Update(ctx context.Context, p entity.Product) e
 	return tx.Commit()
 }
 
+const delete = `
+delete from products
+where id = $1;
+`
+
+func (repository sqlxRepository) Delete(ctx context.Context, id string) error {
+	tx := repository.db.MustBeginTx(ctx, &sql.TxOptions{})
+	tx.MustExecContext(ctx, delete, id)
+	return tx.Commit()
+}
+
 func mapOrder(sort entity.Sorting) string {
 	format := "%s %s"
 

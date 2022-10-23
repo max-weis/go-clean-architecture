@@ -123,6 +123,9 @@ type ServerInterface interface {
 	// (POST /v1/product)
 	CreateProduct(w http.ResponseWriter, r *http.Request)
 
+	// (DELETE /v1/product/{id})
+	DeleteProduct(w http.ResponseWriter, r *http.Request, id ProductID)
+
 	// (GET /v1/product/{id})
 	FindProduct(w http.ResponseWriter, r *http.Request, id ProductID)
 
@@ -218,6 +221,32 @@ func (siw *ServerInterfaceWrapper) CreateProduct(w http.ResponseWriter, r *http.
 
 	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateProduct(w, r)
+	})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// DeleteProduct operation middleware
+func (siw *ServerInterfaceWrapper) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id ProductID
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteProduct(w, r, id)
 	})
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -397,6 +426,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/v1/product", wrapper.CreateProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/product/{id}", wrapper.DeleteProduct)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/product/{id}", wrapper.FindProduct)

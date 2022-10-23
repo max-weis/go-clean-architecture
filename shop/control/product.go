@@ -15,6 +15,9 @@ type (
 		// Update updates a product with the given id
 		Update(ctx context.Context, product entity.Product) error
 
+		// Delete removes a product with the given id
+		Delete(ctx context.Context, id string) error
+
 		// FindPaginated finds a paginated list of products. It can also be sorted and filtered via an entity.FilterObject
 		FindPaginated(ctx context.Context, filterObject entity.FilterObject) ([]entity.Product, error)
 
@@ -67,6 +70,23 @@ func (controller ProductController) UpdateProduct(ctx context.Context, id string
 	if err := controller.repository.Update(ctx, update); err != nil {
 		return err
 	}
+
+	log.Printf("updated product with id '%s'", product.ID)
+
+	return nil
+}
+
+func (controller ProductController) DeleteProduct(ctx context.Context, id string) error {
+	_, err := controller.FindProduct(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if err := controller.repository.Delete(ctx, id); err != nil {
+		return err
+	}
+
+	log.Printf("deleted product with id '%s'", id)
 
 	return nil
 }

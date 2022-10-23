@@ -110,6 +110,28 @@ func TestSqlxRepository_Command(t *testing.T) {
 		assert.Equal(t, product.Description, "test update")
 		assert.Equal(t, product.Price, uint64(99))
 	})
+
+	t.Run("Successfully delete a product", func(t *testing.T) {
+		now := time.Now()
+		ctx := context.Background()
+		err := repository.Save(ctx, entity.Product{
+			ID:          "test delete",
+			Title:       "test",
+			Description: "test",
+			Price:       10,
+			CreatedAt:   now,
+			ModifiedAt:  now,
+		})
+		assert.NoError(t, err)
+
+		err = repository.Delete(ctx, "test delete")
+		assert.NoError(t, err)
+
+		product, err := repository.FindByID(ctx, "test update")
+		assert.NoError(t, err)
+
+		assert.Equal(t, product, entity.Product{})
+	})
 }
 
 func setupRepository() sqlxRepository {

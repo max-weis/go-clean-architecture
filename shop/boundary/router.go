@@ -121,7 +121,7 @@ func (router Router) UpdateProduct(w http.ResponseWriter, r *http.Request, id Pr
 	}
 
 	if err := router.controller.UpdateProduct(r.Context(), id, mapBodyToEntity(product)); err != nil {
-		if errors.Is(err, entity.ErrValidation) {
+		if errors.Is(err, entity.ErrProductNotFound) {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -133,6 +133,18 @@ func (router Router) UpdateProduct(w http.ResponseWriter, r *http.Request, id Pr
 	location := fmt.Sprintf("/v1/product/%s", id)
 	w.Header().Set("Location", location)
 	w.WriteHeader(http.StatusOK)
+}
+
+func (router Router) DeleteProduct(w http.ResponseWriter, r *http.Request, id ProductID) {
+	if err := router.controller.DeleteProduct(r.Context(), id); err != nil {
+		if errors.Is(err, entity.ErrProductNotFound) {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 }
 
 func (router Router) FindProduct(w http.ResponseWriter, r *http.Request, id string) {
