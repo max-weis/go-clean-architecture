@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "e94378e9-1a43-480b-b5a2-cf1686e45e4b",
+		"_postman_id": "85567780-6040-47e8-8762-c13db087be63",
 		"name": "Webshop API Tests",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -123,6 +123,61 @@
 					"path": [
 						"v1",
 						"product"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Find paginated",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful GET request\", function () {",
+							"    pm.expect(pm.response.code).to.be.equal(200);",
+							"",
+							"    const responseJson = pm.response.json();",
+							"",
+							"    pm.expect(responseJson.data.length).to.eql(10);",
+							"    pm.expect(responseJson.curr).to.eql(\"/v1/product?limit=10&offset=0&sort=id_asc\");",
+							"    pm.expect(responseJson.next).to.eql(\"/v1/product?limit=10&offset=1&sort=id_asc\");",
+							"    pm.expect(responseJson.limit).to.eql(10);",
+							"    pm.expect(responseJson.offset).to.eql(0);",
+							"    pm.expect(responseJson.products).to.eql(10);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{host}}/v1/product?limit=10&offset=0&sort=id_asc",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"v1",
+						"product"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "10"
+						},
+						{
+							"key": "offset",
+							"value": "0"
+						},
+						{
+							"key": "sort",
+							"value": "id_asc"
+						}
 					]
 				}
 			},

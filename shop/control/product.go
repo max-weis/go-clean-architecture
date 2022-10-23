@@ -2,20 +2,18 @@ package control
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"github.com/google/uuid"
 	"log"
 	"time"
 	"webshop/shop/entity"
 )
 
-var ValidationError = errors.New("validation failed")
-
 type (
 	ProductRepository interface {
 		// Save persist a product in the database and returns its ID
 		Save(ctx context.Context, product entity.Product) error
+
+		// FindPaginated finds a paginated list of products. It can also be sorted and filtered via an entity.FilterObject
+		FindPaginated(ctx context.Context, filterObject entity.FilterObject) ([]entity.Product, error)
 	}
 
 	ProductController struct {
@@ -29,7 +27,7 @@ func ProvideController(repository ProductRepository) ProductController {
 
 // CreateProduct creates a new product and returns its id
 func (controller ProductController) CreateProduct(ctx context.Context, product entity.Product) (string, error) {
-	if err := validateProduct(product); err != nil {
+	if err := product.Validate(); err != nil {
 		log.Printf("failed to validate product, %s", err)
 		return "", err
 	}
@@ -37,8 +35,7 @@ func (controller ProductController) CreateProduct(ctx context.Context, product e
 	now := time.Now()
 	product.CreatedAt = now
 	product.ModifiedAt = now
-
-	product.ID = uuid.NewString()
+	product.NewId()
 
 	if err := controller.repository.Save(ctx, product); err != nil {
 		log.Printf("failed to persist product with title '%s', %s", product.Title, err)
@@ -50,14 +47,19 @@ func (controller ProductController) CreateProduct(ctx context.Context, product e
 	return product.ID, nil
 }
 
-func validateProduct(product entity.Product) error {
-	if product.Title == "" {
-		return fmt.Errorf("%w: title must be set", ValidationError)
+func (controller ProductController) FindProducts(ctx context.Context, filter entity.FilterObject) ([]entity.Product, error) {
+	if err := filter.Validate(); err != nil {
+		log.Printf("failed to validate filter object, %s", err)
+		return nil, err
 	}
 
-	if product.Description == "" {
-		return fmt.Errorf("%w: description must be set", ValidationError)
+	products, err := controller.repository.FindPaginated(ctx, filter)
+	if err != nil {
+		log.Printf("failed to find products, %s", err)
+		return nil, err
 	}
 
-	return nil
+	log.Printf("found '%d' products", len(products))
+
+	return products, nil
 }

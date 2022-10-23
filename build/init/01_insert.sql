@@ -1,3 +1,4 @@
+-- data generated with https://mockaroo.com/
 BEGIN;
 
 insert into products (id, title, description, price, created_at, modified_at) values ('564a495c-3ac1-475d-b257-bd022fad7f96', 'Pasta - Lasagne, Fresh', 'In blandit ultrices enim. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Proin interdum mauris non ligula pellentesque ultrices. Phasellus id sapien in sapien iaculis congue. Vivamus metus arcu, adipiscing molestie, hendrerit at, vulputate vitae, nisl. Aenean lectus. Pellentesque eget nunc.', 2282, '2022-04-22 07:57:05', '2021-11-21 01:10:39');

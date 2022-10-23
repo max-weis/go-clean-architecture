@@ -3,7 +3,9 @@ package boundary
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 	"log"
 	"net/http"
 	"time"
@@ -19,6 +21,91 @@ func ProvideRouter(controller control.ProductController) Router {
 	return Router{controller: controller}
 }
 
+func (router Router) FindProducts(w http.ResponseWriter, r *http.Request, params FindProductsParams) {
+	filterObject := mapFilterParamsToEntity(params)
+	products, err := router.controller.FindProducts(r.Context(), filterObject)
+	if err != nil {
+		if errors.Is(err, entity.ValidationError) {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, mapToList(products, filterObject))
+}
+
+func mapToList(products []entity.Product, filterObject entity.FilterObject) ProductList {
+	var list ProductList
+
+	list.Limit = int(filterObject.Limit)
+	list.Offset = int(filterObject.Offset)
+	list.Products = len(products)
+
+	var format string
+	if filterObject.Free {
+		format = "/v1/product?limit=%d&offset=%d&sort=%s&free=true"
+	} else {
+		format = "/v1/product?limit=%d&offset=%d&sort=%s"
+	}
+
+	list.Curr = fmt.Sprintf(format, filterObject.Limit, filterObject.Offset, mapEntityFilterToParam(filterObject.Sort))
+
+	nextOffset := filterObject.Offset + 1
+	list.Next = fmt.Sprintf(format, filterObject.Limit, nextOffset, mapEntityFilterToParam(filterObject.Sort))
+
+	if filterObject.Offset == 0 {
+		list.Prev = nil
+	} else {
+		prevOffset := filterObject.Offset - 1
+		prev := fmt.Sprintf(format, filterObject.Limit, prevOffset, mapEntityFilterToParam(filterObject.Sort))
+		list.Prev = &prev
+	}
+
+	data := make([]ProductListItem, 0, len(products))
+	for _, product := range products {
+		listItem := ProductListItem{
+			Title:      product.Title,
+			Price:      int(product.Price),
+			CreatedAt:  openapi_types.Date{Time: product.CreatedAt},
+			ModifiedAt: openapi_types.Date{Time: product.ModifiedAt},
+		}
+
+		data = append(data, listItem)
+	}
+
+	list.Data = data
+
+	return list
+}
+
+func mapEntityFilterToParam(sort entity.Sorting) FindProductsParamsSort {
+	switch sort {
+	case entity.None:
+		return None
+	case entity.IdAsc:
+		return IdAsc
+	case entity.IdDesc:
+		return IdDesc
+	case entity.TitleAsc:
+		return TitleAsc
+	case entity.TitleDesc:
+		return TitleDesc
+	case entity.CreatedAtAsc:
+		return CreatedAsc
+	case entity.CreatedAtDesc:
+		return CreatedDesc
+	case entity.ModifiedAtAsc:
+		return ModifiedAsc
+	case entity.ModifiedAtDesc:
+		return ModifiedDesc
+	default:
+		return None
+	}
+}
+
 func (router Router) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var product CreateProductJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
@@ -28,7 +115,12 @@ func (router Router) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	id, err := router.controller.CreateProduct(r.Context(), mapBodyToEntity(product))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		if errors.Is(err, entity.ValidationError) {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -45,6 +137,12 @@ func writeError(w http.ResponseWriter, code int, message string) {
 	}
 }
 
+func writeJSON(w http.ResponseWriter, code int, payload any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(payload)
+}
+
 func mapBodyToEntity(product CreateProductJSONRequestBody) entity.Product {
 	return entity.Product{
 		Title:       product.Title,
@@ -52,5 +150,48 @@ func mapBodyToEntity(product CreateProductJSONRequestBody) entity.Product {
 		Price:       uint64(product.Price),
 		CreatedAt:   time.Time{},
 		ModifiedAt:  time.Time{},
+	}
+}
+
+func mapFilterParamsToEntity(params FindProductsParams) entity.FilterObject {
+	var filter entity.FilterObject
+
+	filter.Limit = uint(params.Limit)
+	filter.Offset = uint(params.Offset)
+
+	filter.Sort = mapFilterParamsSortToEntity(params.Sort)
+
+	var free bool
+	if params.Free != nil {
+		free = *params.Free
+	}
+
+	filter.Free = free
+
+	return filter
+}
+
+func mapFilterParamsSortToEntity(param FindProductsParamsSort) entity.Sorting {
+	switch param {
+	case None:
+		return entity.None
+	case IdAsc:
+		return entity.IdAsc
+	case IdDesc:
+		return entity.IdDesc
+	case TitleAsc:
+		return entity.TitleAsc
+	case TitleDesc:
+		return entity.TitleDesc
+	case CreatedAsc:
+		return entity.CreatedAtAsc
+	case CreatedDesc:
+		return entity.CreatedAtDesc
+	case ModifiedAsc:
+		return entity.ModifiedAtAsc
+	case ModifiedDesc:
+		return entity.ModifiedAtDesc
+	default:
+		return entity.None
 	}
 }

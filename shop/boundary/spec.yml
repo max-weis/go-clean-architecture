@@ -1,5 +1,6 @@
 openapi: 3.0.0
 info:
+  version: 1.0.0
   title: product REST API
 servers:
   - url: http://localhost:8000
@@ -17,8 +18,64 @@ paths:
       responses:
         201:
           description: product successfully inserted
+          headers:
+            Location:
+              description: the location of the new product
+              example: /v1/product/7c34056e-743a-4f14-b46c-9ae1fe5c4cab
+              schema:
+                type: string
         400:
           description: validation failed
+    get:
+      description: find a list products
+      operationId: FindProducts
+      parameters:
+        - in: query
+          name: limit
+          description: the number of products in a page
+          required: true
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: offset
+          description: the page number
+          required: true
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: sort
+          description: sort by
+          required: true
+          schema:
+            type: string
+            enum:
+              - none
+              - id_asc
+              - id_desc
+              - title_asc
+              - title_desc
+              - created_asc
+              - created_desc
+              - modified_asc
+              - modified_desc
+            default: none
+        - in: query
+          name: free
+          description: filter all non-free products
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: successfully found products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductList'
+        400:
+          description: filter object is invalid
 
 components:
   schemas:
@@ -37,3 +94,63 @@ components:
         - title
         - description
         - price
+
+    ProductList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductListItem'
+        limit:
+          type: integer
+          default: 10
+        offset:
+          type: integer
+          default: 0
+        products:
+          type: integer
+          description: number of products found in the page
+          example: 11
+        curr:
+          type: string
+          description: the current page
+          example: "/v1/product?limit=10&offset=1&sort=none"
+        next:
+          type: string
+          description: the next page
+          example: "/v1/product?limit=10&offset=2&sort=none"
+        prev:
+          type: string
+          description: the previous page
+          example: "/v1/product?limit=10&offset=0&sort=none"
+      required:
+        - data
+        - limit
+        - offset
+        - products
+        - curr
+        - next
+
+    ProductListItem:
+      type: object
+      properties:
+        title:
+          type: string
+          description: title of the product
+        price:
+          type: integer
+          description: price of the product
+        created_at:
+          type: string
+          format: date
+          description: timestamp when the product was created
+        modified_at:
+          type: string
+          format: date
+          description: timestamp when the product was last modified
+      required:
+        - title
+        - price
+        - created_at
+        - modified_at

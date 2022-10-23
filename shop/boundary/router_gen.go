@@ -7,7 +7,22 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 	"github.com/go-chi/chi/v5"
+)
+
+// Defines values for FindProductsParamsSort.
+const (
+	CreatedAsc   FindProductsParamsSort = "created_asc"
+	CreatedDesc  FindProductsParamsSort = "created_desc"
+	IdAsc        FindProductsParamsSort = "id_asc"
+	IdDesc       FindProductsParamsSort = "id_desc"
+	ModifiedAsc  FindProductsParamsSort = "modified_asc"
+	ModifiedDesc FindProductsParamsSort = "modified_desc"
+	None         FindProductsParamsSort = "none"
+	TitleAsc     FindProductsParamsSort = "title_asc"
+	TitleDesc    FindProductsParamsSort = "title_desc"
 )
 
 // ProductBase defines model for ProductBase.
@@ -22,11 +37,65 @@ type ProductBase struct {
 	Title string `json:"title"`
 }
 
+// ProductList defines model for ProductList.
+type ProductList struct {
+	// the current page
+	Curr  string            `json:"curr"`
+	Data  []ProductListItem `json:"data"`
+	Limit int               `json:"limit"`
+
+	// the next page
+	Next   string `json:"next"`
+	Offset int    `json:"offset"`
+
+	// the previous page
+	Prev *string `json:"prev,omitempty"`
+
+	// number of products found in the page
+	Products int `json:"products"`
+}
+
+// ProductListItem defines model for ProductListItem.
+type ProductListItem struct {
+	// timestamp when the product was created
+	CreatedAt openapi_types.Date `json:"created_at"`
+
+	// timestamp when the product was last modified
+	ModifiedAt openapi_types.Date `json:"modified_at"`
+
+	// price of the product
+	Price int `json:"price"`
+
+	// title of the product
+	Title string `json:"title"`
+}
+
+// FindProductsParams defines parameters for FindProducts.
+type FindProductsParams struct {
+	// the number of products in a page
+	Limit int `form:"limit" json:"limit"`
+
+	// the page number
+	Offset int `form:"offset" json:"offset"`
+
+	// sort by
+	Sort FindProductsParamsSort `form:"sort" json:"sort"`
+
+	// filter all non-free products
+	Free *bool `form:"free,omitempty" json:"free,omitempty"`
+}
+
+// FindProductsParamsSort defines parameters for FindProducts.
+type FindProductsParamsSort string
+
 // CreateProductJSONRequestBody defines body for CreateProduct for application/json ContentType.
 type CreateProductJSONRequestBody = ProductBase
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (GET /v1/product)
+	FindProducts(w http.ResponseWriter, r *http.Request, params FindProductsParams)
 
 	// (POST /v1/product)
 	CreateProduct(w http.ResponseWriter, r *http.Request)
@@ -40,6 +109,79 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// FindProducts operation middleware
+func (siw *ServerInterfaceWrapper) FindProducts(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params FindProductsParams
+
+	// ------------- Required query parameter "limit" -------------
+	if paramValue := r.URL.Query().Get("limit"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "offset" -------------
+	if paramValue := r.URL.Query().Get("offset"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "offset"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "offset", r.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "sort" -------------
+	if paramValue := r.URL.Query().Get("sort"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sort"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "sort", r.URL.Query(), &params.Sort)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "free" -------------
+	if paramValue := r.URL.Query().Get("free"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "free", r.URL.Query(), &params.Free)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "free", Err: err})
+		return
+	}
+
+	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.FindProducts(w, r, params)
+	})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
 
 // CreateProduct operation middleware
 func (siw *ServerInterfaceWrapper) CreateProduct(w http.ResponseWriter, r *http.Request) {
@@ -169,6 +311,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/product", wrapper.FindProducts)
+	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/v1/product", wrapper.CreateProduct)
 	})

@@ -13,6 +13,11 @@ short:
 docker:
 	docker compose -f ./build/docker-compose.yml up --build
 
+db:
+	docker rm -f postgres
+	docker volume rm build_pg_data
+	docker compose -f ./build/docker-compose.yml up --build postgres
+
 apitest:
 	docker compose -f ./build/docker-compose.yml up -d --build
 	sleep 5

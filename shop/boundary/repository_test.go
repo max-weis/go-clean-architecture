@@ -40,6 +40,31 @@ func TestSqlxRepository_Save(t *testing.T) {
 	})
 }
 
+func TestSqlxRepository_FindPaginated(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip integrationtest")
+	}
+
+	t.Run("Find products", func(t *testing.T) {
+		compose := setupPostgres(t)
+		defer compose.Down()
+
+		// TODO: use waiting strategy
+		time.Sleep(5 * time.Second)
+
+		repository := setupRepository()
+
+		products, err := repository.FindPaginated(context.Background(), entity.FilterObject{
+			Sort:   entity.TitleAsc,
+			Limit:  10,
+			Offset: 0,
+		})
+		assert.NoError(t, err)
+
+		assert.Len(t, products, 10)
+	})
+}
+
 func setupRepository() sqlxRepository {
 	return sqlxRepository{
 		db: database.ProvideDatabase(config.ProvideConfig()),

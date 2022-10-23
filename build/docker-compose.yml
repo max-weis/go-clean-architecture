@@ -1,6 +1,10 @@
+volumes:
+  pg_data:
+
 services:
   postgres:
     image: postgres:15-alpine
+    container_name: postgres
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
@@ -8,12 +12,14 @@ services:
       - 5432:5432
     volumes:
       - ./init/:/docker-entrypoint-initdb.d/
+      - pg_data:/data/postgres
 
   webshop:
     build:
       context: ..
       dockerfile: ./build/Dockerfile
     restart: always
+    container_name: webshop
     environment:
       PQ_HOST: postgres
     ports:
